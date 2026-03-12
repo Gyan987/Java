@@ -1,22 +1,21 @@
 FROM gitpod/workspace-java-21:2025-11-14-10-05-32
 
-ENV LLVM_SCRIPT="tmp_llvm.sh"
-
-RUN test ! -f  "$LLVM_SCRIPT" \
-  && wget https://apt.llvm.org/llvm.sh -O "$LLVM_SCRIPT" \
-  && chmod +x "$LLVM_SCRIPT"
-
 USER root
 
-RUN ./"$LLVM_SCRIPT" 16 \
-  && apt-get update \
-  && apt-get install -y --no-install-recommends \
-  clang-format-16=1:16.0.6~++20231112100510+7cbf1a259152-1~exp1~20231112100554.106 \
-  && apt-get clean \
-  && rm -rf /var/lib/apt/lists/*
+ARG LLVM_MAJOR=18
+ENV LLVM_SCRIPT=/tmp/llvm.sh
 
-RUN ln -s "$(command -v clang-format-16)" "/usr/bin/clang-format"
+RUN set -eux; \
+  apt-get update; \
+  apt-get install -y --no-install-recommends ca-certificates curl gnupg; \
+  rm -rf /var/lib/apt/lists/*; \
+  curl -fsSL https://apt.llvm.org/llvm.sh -o "${LLVM_SCRIPT}"; \
+  chmod +x "${LLVM_SCRIPT}"; \
+  "${LLVM_SCRIPT}" "${LLVM_MAJOR}"; \
+  apt-get update; \
+  apt-get install -y --no-install-recommends "clang-format-${LLVM_MAJOR}"; \
+  rm -rf /var/lib/apt/lists/*; \
+  ln -sf "$(command -v clang-format-${LLVM_MAJOR})" /usr/bin/clang-format; \
+  rm -f "${LLVM_SCRIPT}"
 
 USER gitpod
-
-RUN rm "$LLVM_SCRIPT"
